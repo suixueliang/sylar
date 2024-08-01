@@ -6,7 +6,7 @@
 
 #include "endian.h"
 #include "log.h"
-
+//Zigzag 是一种用于对有符号整型进行处理的方式，通过它将有符号整型压缩后，再运用 Varint 编码方法进行编码。Varint 是一种把整数编码为变长字节的方式，能根据整数的大小灵活使用不同数量的字节进行编码。这种先使用 Zigzag 压缩再进行 Varint 编码的操作，目的通常是为了节省内存空间和提高数据存储与传输的效率。
 namespace sylar {
 
 static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");

@@ -18,7 +18,7 @@ namespace sylar {
 /**
  * @brief 信号量
  */
-class Semaphore : Noncopyable {
+class Semaphore : Noncopyable {//信号量封装
 public:
     /**
      * @brief 构造函数
@@ -45,7 +45,7 @@ private:
 };
 
 /**
- * @brief 局部锁的模板实现
+ * @brief 局部锁的模板实现（互斥锁）
  */
 template<class T>
 struct ScopedLockImpl {
@@ -68,11 +68,11 @@ public:
     }
 
     /**
-     * @brief 加锁
+     * @brief 加锁，判断是否死锁
      */
     void lock() {
-        if(!m_locked) {
-            m_mutex.lock();
+        if(!m_locked) {    
+            m_mutex.lock();   //没加锁，才能加锁
             m_locked = true;
         }
     }
@@ -81,7 +81,7 @@ public:
      * @brief 解锁
      */
     void unlock() {
-        if(m_locked) {
+        if(m_locked) {        //加锁，才能解锁
             m_mutex.unlock();
             m_locked = false;
         }
@@ -421,7 +421,7 @@ public:
     }
 private:
     /// 原子状态
-    volatile std::atomic_flag m_mutex;
+    volatile std::atomic_flag m_mutex;    //cpu每次重新取内存
 };
 
 class Scheduler;

@@ -20,13 +20,13 @@ class Scheduler;
 /**
  * @brief 协程类
  */
-class Fiber : public std::enable_shared_from_this<Fiber> {
-friend class Scheduler;
+class Fiber : public std::enable_shared_from_this<Fiber> {//: public std::enable_shared_from_this<Fiber>可以获取自己的类的智能指针
+friend class Scheduler;                                   //允许Fiber对象获取指向自身的shared_ptr
 public:
     typedef std::shared_ptr<Fiber> ptr;
 
     /**
-     * @brief 协程状态
+     * @brief 枚举协程状态
      */
     enum State {
         /// 初始化状态
@@ -44,6 +44,8 @@ public:
     };
 private:
     /**
+     * 构造函数私有化，不能从这个类派生或者创建类的实例
+     * 无参构造函数是私有的，确保每个线程第一个协程的构造
      * @brief 无参构造函数
      * @attention 每个线程第一个协程的构造
      */
@@ -56,8 +58,9 @@ public:
      * @param[in] stacksize 协程栈大小
      * @param[in] use_caller 是否在MainFiber上调度
      */
+    //语法：std::function<return_type(args_type)>
     Fiber(std::function<void()> cb, size_t stacksize = 0, bool use_caller = false);
-
+    
     /**
      * @brief 析构函数
      */
@@ -68,6 +71,7 @@ public:
      * @pre getState() 为 INIT, TERM, EXCEPT
      * @post getState() = INIT
      */
+    //重置协程函数，并重置状态，重置后该内存可以用在新协程的使用上，节约空间。
     void reset(std::function<void()> cb);
 
     /**
@@ -114,7 +118,7 @@ public:
 
     /**
      * @brief 返回当前所在的协程
-     */
+     */ 
     static Fiber::ptr GetThis();
 
     /**

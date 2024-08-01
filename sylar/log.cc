@@ -233,8 +233,8 @@ LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level
     ,m_level(level) {
 }
 
-Logger::Logger(const std::string& name)
-    :m_name(name)
+Logger::Logger(const std::string& name)     //logger构造函数
+    :m_name(name)                           //name是自己给的名称，会赋给m_name
     ,m_level(LogLevel::DEBUG) {
     m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
 }
@@ -314,15 +314,20 @@ void Logger::clearAppenders() {
     m_appenders.clear();
 }
 
-void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
+void Logger::log(LogLevel::Level level, LogEvent::ptr event) {        //输出日志内容
+    //检查日志是否满足级别要求
     if(level >= m_level) {
+        //获取当前Logger的shared_ptr
         auto self = shared_from_this();
+        //使用 MutexType 锁住日志器的互斥量，确保线程安全
         MutexType::Lock lock(m_mutex);
-        if(!m_appenders.empty()) {
+        // 检查是否有日志目标，如果有，则将日志事件发送到每个目标
+        if(!m_appenders.empty()) {             //分发日志
             for(auto& i : m_appenders) {
-                i->log(self, level, event);
+                i->log(self, level, event);    //self是前面的shared_ptr,保障在处理日志期间当前对象有效
             }
-        } else if(m_root) {
+        // 如果当前日志器没有日志目标，并且有根日志器（主日志器），则将日志事件发送到根日志器
+        } else if(m_root) {                    //层级传递日志
             m_root->log(level, event);
         }
     }
@@ -386,7 +391,7 @@ std::string FileLogAppender::toYamlString() {
 
 bool FileLogAppender::reopen() {
     MutexType::Lock lock(m_mutex);
-    if(m_filestream) {
+    if(m_filestream) {               //如果文件打开成功，则先关闭文件，再重新打开
         m_filestream.close();
     }
     return FSUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
@@ -437,14 +442,15 @@ std::ostream& LogFormatter::format(std::ostream& ofs, std::shared_ptr<Logger> lo
 //%xxx %xxx{xxx} %%
 void LogFormatter::init() {
     //str, format, type
-    std::vector<std::tuple<std::string, std::string, int> > vec;
-    std::string nstr;
+    std::vector<std::tuple<std::string, std::string, int> > vec;      //创建三元组数组存储结果
+    std::string nstr;           // 存储普通字符串部分
     for(size_t i = 0; i < m_pattern.size(); ++i) {
+        // 如果当前字符不是 '%'，则直接添加到 nstr 中
         if(m_pattern[i] != '%') {
             nstr.append(1, m_pattern[i]);
             continue;
         }
-
+        // 处理转义的 '%' 字符
         if((i + 1) < m_pattern.size()) {
             if(m_pattern[i + 1] == '%') {
                 nstr.append(1, '%');
@@ -452,23 +458,26 @@ void LogFormatter::init() {
             }
         }
 
-        size_t n = i + 1;
-        int fmt_status = 0;
-        size_t fmt_begin = 0;
+        size_t n = i + 1; // 从 `i` 的下一个位置开始
+        int fmt_status = 0; // 格式解析状态，0 表示未进入格式解析，1 表示正在解析格式
+        size_t fmt_begin = 0; // 格式字符串的起始位置
 
-        std::string str;
-        std::string fmt;
+        std::string str; // 保存当前解析的普通字符串
+        std::string fmt; // 保存当前解析的格式字符串
+        // 开始解析格式字符串 
         while(n < m_pattern.size()) {
+            // 判断是否是普通字符
             if(!fmt_status && (!isalpha(m_pattern[n]) && m_pattern[n] != '{'
                     && m_pattern[n] != '}')) {
                 str = m_pattern.substr(i + 1, n - i - 1);
                 break;
             }
+            // 进入格式字符串解析
             if(fmt_status == 0) {
                 if(m_pattern[n] == '{') {
                     str = m_pattern.substr(i + 1, n - i - 1);
                     //std::cout << "*" << str << std::endl;
-                    fmt_status = 1; //解析格式
+                    fmt_status = 1; // 进入格式解析状态
                     fmt_begin = n;
                     ++n;
                     continue;
@@ -477,19 +486,20 @@ void LogFormatter::init() {
                 if(m_pattern[n] == '}') {
                     fmt = m_pattern.substr(fmt_begin + 1, n - fmt_begin - 1);
                     //std::cout << "#" << fmt << std::endl;
-                    fmt_status = 0;
+                    fmt_status = 0;// 退出格式解析状态
                     ++n;
                     break;
                 }
             }
             ++n;
+             // 处理到达字符串末尾的情况
             if(n == m_pattern.size()) {
                 if(str.empty()) {
                     str = m_pattern.substr(i + 1);
                 }
             }
         }
-
+        // 如果当前解析的部分是普通字符串
         if(fmt_status == 0) {
             if(!nstr.empty()) {
                 vec.push_back(std::make_tuple(nstr, std::string(), 0));
@@ -497,16 +507,17 @@ void LogFormatter::init() {
             }
             vec.push_back(std::make_tuple(str, fmt, 1));
             i = n - 1;
-        } else if(fmt_status == 1) {
+        } else if(fmt_status == 1) {// 解析出错
             std::cout << "pattern parse error: " << m_pattern << " - " << m_pattern.substr(i) << std::endl;
             m_error = true;
             vec.push_back(std::make_tuple("<<pattern_error>>", fmt, 0));
         }
     }
-
+    // 将最后剩余的普通字符串加入到 vec 中
     if(!nstr.empty()) {
         vec.push_back(std::make_tuple(nstr, "", 0));
     }
+    // 定义一个静态映射，将格式符号映射到对应的格式化项类,这是一个映射（map），它的键是 std::string 类型的字符串标识符，值是一个 std::function 对象，该对象接受一个 std::string 参数并返回一个 FormatItem::ptr
     static std::map<std::string, std::function<FormatItem::ptr(const std::string& str)> > s_format_items = {
 #define XX(str, C) \
         {#str, [](const std::string& fmt) { return FormatItem::ptr(new C(fmt));}}
@@ -525,13 +536,13 @@ void LogFormatter::init() {
         XX(N, ThreadNameFormatItem),        //N:线程名称
 #undef XX
     };
-
+    // 解析 vec 中的每个三元组，并根据格式符号创建对应的格式化项
     for(auto& i : vec) {
-        if(std::get<2>(i) == 0) {
+        if(std::get<2>(i) == 0) {// 普通字符串
             m_items.push_back(FormatItem::ptr(new StringFormatItem(std::get<0>(i))));
         } else {
             auto it = s_format_items.find(std::get<0>(i));
-            if(it == s_format_items.end()) {
+            if(it == s_format_items.end()) {//s_format_items.end() 返回的是一个迭代器，指向 s_format_items 字典的最后一个元素之后的位置。通常，这个位置不包含有效的元素，只是用来表示范围结束的标记。
                 m_items.push_back(FormatItem::ptr(new StringFormatItem("<<error_format %" + std::get<0>(i) + ">>")));
                 m_error = true;
             } else {

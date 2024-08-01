@@ -1,4 +1,4 @@
-/**
+/*
  * @file thread.h
  * @brief 线程相关的封装
  * @author sylar.yin

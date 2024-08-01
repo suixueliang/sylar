@@ -9,7 +9,7 @@ Semaphore::Semaphore(uint32_t count) {
         throw std::logic_error("sem_init error");
     }
 }
-
+ 
 Semaphore::~Semaphore() {
     sem_destroy(&m_semaphore);
 }

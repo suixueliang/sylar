@@ -20,7 +20,7 @@ ConfigVarBase::ptr Config::LookupBase(const std::string& name) {
 //  B: 10
 //  C: str
 
-static void ListAllMember(const std::string& prefix,
+static void (const std::string& prefix,
                           const YAML::Node& node,
                           std::list<std::pair<std::string, const YAML::Node> >& output) {
     if(prefix.find_first_not_of("abcdefghikjlmnopqrstuvwxyz._012345678")

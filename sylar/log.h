@@ -324,9 +324,9 @@ public:
     /**
      * @brief 日志内容项格式化
      */
-    class FormatItem {
+    class FormatItem {                        //定义子模块
     public:
-        typedef std::shared_ptr<FormatItem> ptr;
+        typedef std::shared_ptr<FormatItem> ptr;   //智能指针
         /**
          * @brief 析构函数
          */
@@ -426,16 +426,16 @@ protected:
  * @brief 日志器
  */
 class Logger : public std::enable_shared_from_this<Logger> {
-friend class LoggerManager;
+friend class LoggerManager;                    //声明友元类，LoggerManager可以访问Logger类
 public:
-    typedef std::shared_ptr<Logger> ptr;
-    typedef Spinlock MutexType;
+    typedef std::shared_ptr<Logger> ptr;    //定义智能指针
+    typedef Spinlock MutexType;             
 
     /**
      * @brief 构造函数
      * @param[in] name 日志器名称
      */
-    Logger(const std::string& name = "root");
+    Logger(const std::string& name = "root");//使用引用，避免不必要的拷贝，使用const保证不会被修改，默认为root
 
     /**
      * @brief 写日志
@@ -526,13 +526,13 @@ public:
      */
     std::string toYamlString();
 private:
-    /// 日志名称
+    /// 日志名称，这里使用 m_ 开头是一个私有变量的规范
     std::string m_name;
     /// 日志级别
     LogLevel::Level m_level;
     /// Mutex
     MutexType m_mutex;
-    /// 日志目标集合
+    /// 日志目标集合，定义容器的集合用来装我们要输出的地方
     std::list<LogAppender::ptr> m_appenders;
     /// 日志格式器
     LogFormatter::ptr m_formatter;

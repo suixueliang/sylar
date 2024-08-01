@@ -8,16 +8,19 @@
 namespace sylar {
 
 static Logger::ptr g_logger = SYLAR_LOG_NAME("system");
-
+//std::atomic原子变量
+//当前协程ID
 static std::atomic<uint64_t> s_fiber_id {0};
+//全局计数
 static std::atomic<uint64_t> s_fiber_count {0};
-
+//线程局部变量（当前协程）
 static thread_local Fiber* t_fiber = nullptr;
+//线程局部变量（主协程智能指针）
 static thread_local Fiber::ptr t_threadFiber = nullptr;
-
+//配合配置系统指定协程的 栈大小
 static ConfigVar<uint32_t>::ptr g_fiber_stack_size =
     Config::Lookup<uint32_t>("fiber.stack_size", 128 * 1024, "fiber stack size");
-
+//统一的方法来处理协程栈空间的分配
 class MallocStackAllocator {
 public:
     static void* Alloc(size_t size) {
@@ -28,7 +31,7 @@ public:
         return free(vp);
     }
 };
-
+//使用了个别名 如果未来需要替换栈分配的方式，这里可以比较方便
 using StackAllocator = MallocStackAllocator;
 
 uint64_t Fiber::GetFiberId() {
@@ -37,7 +40,7 @@ uint64_t Fiber::GetFiberId() {
     }
     return 0;
 }
-
+//将当前线程的上下文交由主协程
 Fiber::Fiber() {
     m_state = EXEC;
     SetThis(this);
@@ -50,7 +53,7 @@ Fiber::Fiber() {
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber main";
 }
-
+//创建子协程
 Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool use_caller)
     :m_id(++s_fiber_id)
     ,m_cb(cb) {

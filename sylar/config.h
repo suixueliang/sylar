@@ -29,7 +29,7 @@
 namespace sylar {
 
 /**
- * @brief 配置变量的基类
+ * @brief 配置变量的基类，放置公用属性
  */
 class ConfigVarBase {
 public:
